@@ -1,0 +1,76 @@
+using System.Threading;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections.Generic;
+
+public class GameManager : MonoBehaviour
+{
+    [SerializeField] GameObject exit;
+    [SerializeField] private int timeToReset = 120;
+    private bool startResetTimer = false;
+    private Player player;
+    [SerializeField] private List<GuardLOS> guards;
+    [SerializeField] Distraction vase;
+
+    
+
+    private string currentScene;
+
+    private void OnEnable()
+    {
+        
+    }
+
+    private void OnDisable()
+    {
+        GuardLOS.PlayerDetected -= HandlePlayerCaught;
+        Player.DestroyVase -= TriggerVaseActions;
+    }
+
+    void Start()
+    {
+        guards.Clear();
+        GuardLOS.PlayerDetected += HandlePlayerCaught;
+        Player.DestroyVase += TriggerVaseActions;
+        currentScene = SceneManager.GetActiveScene().name;
+        player = FindFirstObjectByType<Player>();
+        GameObject[] Gp = GameObject.FindGameObjectsWithTag("Guard");
+        foreach (GameObject item in Gp)
+        {
+            guards.Add(item.GetComponentInChildren<GuardLOS>());
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (startResetTimer)
+        {
+            timeToReset--;
+        }
+        if (timeToReset < 0)
+        {
+            SceneManager.LoadScene(currentScene);
+        }
+    }
+
+    private void HandlePlayerCaught(GuardLOS guard)
+    {
+        Debug.Log("Game Over");
+        startResetTimer = true;
+        player.Die();
+    }
+
+    private void TriggerVaseActions(Distraction vase){
+        //Debug.Log("PAIN");
+        vase.CrackVase();
+        foreach(GuardLOS guardToLook in guards){
+            //Debug.Log("hi");
+            float VecX = vase.gameObject.transform.position.x - guardToLook.transform.position.x;
+            float VecY = vase.gameObject.transform.position.y - guardToLook.transform.position.y;
+            Vector2 vaseAng = new Vector2(VecX, VecY);
+            guardToLook.RotateToVase(vaseAng);
+            
+        }
+    }
+
+}
